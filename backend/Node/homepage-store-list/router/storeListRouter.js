@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getStores, addStore, deleteStore } = require('../controller/storeListController');
+const { getStores, getStoreById, addStore, deleteStore } = require('../controller/storeListController');
 
 router.get('/stores', getStores);
+router.get('/stores/:storeId', getStoreById);
 router.post('/stores', addStore);
 router.delete('/stores/:storeId', deleteStore);
 

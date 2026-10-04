@@ -9,6 +9,18 @@ async function getStores(req, res) {
 	}
 }
 
+async function getStoreById(req, res) {
+	try {
+		const store = await Store.findOne({ storeId: req.params.storeId });
+		if (!store) {
+			return res.status(404).json({ message: 'Store not found' });
+		}
+		return res.status(200).json(store);
+	} catch (error) {
+		return res.status(500).json({ message: 'Failed to retrieve store' });
+	}
+}
+
 async function addStore(req, res) {
 	try {
 		const requiredFields = ['storeId', 'storeName', 'storeImage', 'pureVeg', 'ratings'];
@@ -44,4 +56,4 @@ async function deleteStore(req, res) {
 	}
 }
 
-module.exports = { getStores, addStore, deleteStore };
+module.exports = { getStores, getStoreById, addStore, deleteStore };
