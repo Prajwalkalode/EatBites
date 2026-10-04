@@ -1,0 +1,22 @@
+{
+  "name": "homepage-store-list",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "~18.0.4",
+    "express": "~5.2.1",
+    "mongoose": "~9.10.2"
+  },
+  "devDependencies": {
+    "nodemon": "~3.1.14"
+  }
+}
