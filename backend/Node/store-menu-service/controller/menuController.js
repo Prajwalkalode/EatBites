@@ -14,8 +14,15 @@ function getActiveItemFilter(req) {
     return {
         storeId: req.params.storeId,
         menuItemId: req.params.menuItemId,
-        isDeleted: { $ne: true }
+        $or: [
+            { isActive: true },
+            { isActive: { $exists: false }, isDeleted: { $ne: true } }
+        ]
     };
+}
+
+function getActorEmail(req, bodyField = 'updatedBy') {
+    return req.user?.email ?? req.body?.[bodyField];
 }
 
 function handleWriteError(res, error, fallbackMessage) {
@@ -57,7 +64,10 @@ async function getMenuByStore(req, res) {
     try {
         const menuItems = await MenuItem.find({
             storeId: req.params.storeId,
-            isDeleted: { $ne: true }
+            $or: [
+                { isActive: true },
+                { isActive: { $exists: false }, isDeleted: { $ne: true } }
+            ]
         });
         return res.status(200).json({ success: true, data: menuItems });
     } catch (error) {
@@ -83,6 +93,7 @@ async function createMenuItem(req, res) {
     }
 
     try {
+        const actorEmail = getActorEmail(req, 'createdBy');
         const menuItem = await MenuItem.create({
             menuItemId: body.menuItemId.trim(),
             storeId: storeId.trim(),
@@ -93,7 +104,9 @@ async function createMenuItem(req, res) {
             isVeg: body.isVeg,
             itemImage: body.itemImage,
             isAvailable: body.isAvailable,
-            isDeleted: false
+            isActive: true,
+            createdBy: actorEmail,
+            updatedBy: actorEmail
         });
         return res.status(201).json({ success: true, data: menuItem });
     } catch (error) {
@@ -118,6 +131,11 @@ async function updateMenuItem(req, res) {
         return res.status(400).json({ success: false, message: 'Price must be a positive number' });
     }
 
+    const actorEmail = getActorEmail(req);
+    if (actorEmail !== undefined) {
+        updates.updatedBy = actorEmail;
+    }
+
     try {
         const menuItem = await MenuItem.findOneAndUpdate(
             getActiveItemFilter(req),
@@ -135,14 +153,21 @@ async function updateMenuItem(req, res) {
 
 async function toggleMenuItemAvailability(req, res) {
     try {
+        const actorEmail = getActorEmail(req);
+        const setFields = {
+            isAvailable: { $not: [{ $ifNull: ['$isAvailable', true] }] },
+            updatedAt: new Date()
+        };
+        if (actorEmail !== undefined) {
+            setFields.updatedBy = actorEmail;
+        }
+
         const menuItem = await MenuItem.findOneAndUpdate(
             getActiveItemFilter(req),
             [{
-                $set: {
-                    isAvailable: { $not: [{ $ifNull: ['$isAvailable', true] }] }
-                }
+                $set: setFields
             }],
-            { returnDocument: 'after', runValidators: true, updatePipeline: true }
+            { returnDocument: 'after', runValidators: true, updatePipeline: true, timestamps: false }
         );
         
         if (!menuItem) {
@@ -156,9 +181,15 @@ async function toggleMenuItemAvailability(req, res) {
 
 async function softDeleteMenuItem(req, res) {
     try {
+        const actorEmail = getActorEmail(req);
+        const updates = { isActive: false };
+        if (actorEmail !== undefined) {
+            updates.updatedBy = actorEmail;
+        }
+
         const menuItem = await MenuItem.findOneAndUpdate(
             getActiveItemFilter(req),
-            { $set: { isDeleted: true } },
+            { $set: updates },
             { returnDocument: 'after', runValidators: true }
         );
         if (!menuItem) {

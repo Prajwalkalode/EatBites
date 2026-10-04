@@ -17,8 +17,10 @@ const menuItemSchema = new mongoose.Schema({
     isVeg: Boolean,
     itemImage: String,
     isAvailable: { type: Boolean, default: true },
-    isDeleted: { type: Boolean, default: false }
-});
+    isActive: { type: Boolean, default: true },
+    createdBy: { type: String, trim: true },
+    updatedBy: { type: String, trim: true }
+}, { timestamps: true });
 
 menuItemSchema.index({ storeId: 1, menuItemId: 1 }, { unique: true });
 
